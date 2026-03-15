@@ -21,12 +21,12 @@ class PriorityQueue q where
   -- | Inserts given value with priority into queue
   insert :: Ord k => k -> v -> q k v -> q k v
 
-  -- | Returns lowest priority value paired with queue without
+  -- | Returns value with lowest priority paired with queue without
   -- that element wrapped into 'Just' if such element exists (non-empty queue),
   -- or returns 'Nothing' otherwise
   extractMin :: Ord k => q k v -> Maybe (v, q k v)
 
-  -- | Returns highest priority value paired with queue without
+  -- | Returns value with highest priority paired with queue without
   -- that element wrapped into 'Just' if such element exists (non-empty queue),
   -- or returns 'Nothing' otherwise
   extractMax :: Ord k => q k v -> Maybe (v, q k v)

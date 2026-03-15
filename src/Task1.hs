@@ -73,7 +73,7 @@ instance Ord a => Measured (Max a) a where
 -- | MinMax
 --
 -- * Monoid:  @ MinMax S = {S, +inf, min} x {S, -inf, max} @
--- * Measure: @ measure x = MinMax x @
+-- * Measure: @ measure x = MinMax (Min x, Max x) @
 --
 -- Usage example:
 --
