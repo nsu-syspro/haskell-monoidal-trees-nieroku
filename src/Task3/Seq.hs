@@ -1,21 +1,21 @@
 {-# OPTIONS_GHC -Wall #-}
+
 -- The above pragma enables all warnings
 
 module Task3.Seq where
 
 import Common.Sequence
-
-import Task1 (Measured(..), Size(..))
+import Task1 (Measured (..), Size (..))
 import Task3.Tree
 
 -- * Sequence definition
 
 -- | Random-access sequence based on binary tree
-newtype Seq a = Seq { getTree :: Tree (Size a) (Elem a) }
+newtype Seq a = Seq {getTree :: Tree (Size a) (Elem a)}
   deriving (Show, Eq)
 
 -- | Sequence element wrapper
-newtype Elem a = Elem { getElem :: a }
+newtype Elem a = Elem {getElem :: a}
   deriving (Show, Eq)
 
 -- | Measures given element as 'Size 1'

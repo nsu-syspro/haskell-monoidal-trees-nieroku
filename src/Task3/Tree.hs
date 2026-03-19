@@ -1,11 +1,11 @@
 {-# OPTIONS_GHC -Wall #-}
+
 -- The above pragma enables all warnings
 
 module Task3.Tree where
 
 import Common.MonoidalTree
-
-import Task1 (Measured(..))
+import Task1 (Measured (..))
 
 -- * 2-3 tree definition
 
@@ -19,7 +19,7 @@ data Tree m a
   deriving (Show, Eq)
 
 -- | Measures given tree using provided measure of 'a'
-instance Measured m a => Measured m (Tree m a) where
+instance (Measured m a) => Measured m (Tree m a) where
   measure = error "TODO: define measure (Measured m (Task3.Tree m a))"
 
 instance Foldable (Tree m) where
@@ -30,10 +30,10 @@ instance Foldable (Tree m) where
 leaf :: a -> Tree m a
 leaf = error "TODO: define leaf (Task3.Tree)"
 
-node2 :: Measured m a => Tree m a -> Tree m a -> Tree m a
+node2 :: (Measured m a) => Tree m a -> Tree m a -> Tree m a
 node2 = error "TODO: define node2 (Task3.Tree)"
 
-node3 :: Measured m a => Tree m a -> Tree m a -> Tree m a -> Tree m a
+node3 :: (Measured m a) => Tree m a -> Tree m a -> Tree m a -> Tree m a
 node3 = error "TODO: define node3 (Task3.Tree)"
 
 -- * Monoidal tree instance
