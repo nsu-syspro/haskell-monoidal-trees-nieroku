@@ -1,3 +1,4 @@
+{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wall #-}
 
 -- The above pragma enables all warnings
@@ -36,13 +37,15 @@ data Min a = PosInf | Min a
   deriving (Show, Eq)
 
 instance (Ord a) => Semigroup (Min a) where
-  (<>) = error "TODO: define (<>) (Semigroup (Min a))"
+  PosInf <> r = r
+  l <> PosInf = l
+  (Min l) <> (Min r) = Min (min l r)
 
 instance (Ord a) => Monoid (Min a) where
-  mempty = error "TODO: define mempty (Monoid (Min a))"
+  mempty = PosInf
 
 instance (Ord a) => Measured (Min a) a where
-  measure = error "TODO: define measure (Measured (Min a) a)"
+  measure = Min
 
 -- | Max
 --
@@ -61,13 +64,15 @@ data Max a = NegInf | Max a
   deriving (Show, Eq)
 
 instance (Ord a) => Semigroup (Max a) where
-  (<>) = error "TODO: define (<>) (Semigroup (Max a))"
+  NegInf <> r = r
+  l <> NegInf = l
+  (Max l) <> (Max r) = Max (max l r)
 
 instance (Ord a) => Monoid (Max a) where
-  mempty = error "TODO: define mempty (Monoid (Max a))"
+  mempty = NegInf
 
 instance (Ord a) => Measured (Max a) a where
-  measure = error "TODO: define measure (Measured (Max a) a)"
+  measure = Max
 
 -- | MinMax
 --
@@ -86,13 +91,19 @@ newtype MinMax a = MinMax {getMinMax :: (Min a, Max a)}
   deriving (Show, Eq)
 
 instance (Ord a) => Semigroup (MinMax a) where
-  (<>) = error "TODO: define (<>) (Semigroup (MinMax a))"
+  (MinMax (lmin, lmax)) <> (MinMax (rmin, rmax)) = MinMax (lmin <> rmin, lmax <> rmax)
 
 instance (Ord a) => Monoid (MinMax a) where
-  mempty = error "TODO: define mempty (Monoid (MinMax a))"
+  mempty = MinMax (PosInf, NegInf)
 
 instance (Ord a) => Measured (MinMax a) a where
-  measure = error "TODO: define measure (Measured (MinMax a) a)"
+  measure x = MinMax (Min x, Max x)
+
+instance {-# INCOHERENT #-} (Ord a, Measured (MinMax a) t) => Measured (Min a) t where
+  measure = fst . getMinMax . measure
+
+instance {-# INCOHERENT #-} (Ord a, Measured (MinMax a) t) => Measured (Max a) t where
+  measure = snd . getMinMax . measure
 
 -- | Size
 --
@@ -111,10 +122,10 @@ newtype Size a = Size {getSize :: Int}
   deriving (Show, Eq)
 
 instance Semigroup (Size a) where
-  (<>) = error "TODO: define (<>) (Semigroup (Size a))"
+  (Size l) <> (Size r) = Size (l + r)
 
 instance Monoid (Size a) where
-  mempty = error "TODO: define mempty (Monoid (Size a))"
+  mempty = Size 0
 
 instance Measured (Size a) a where
-  measure = error "TODO: define measure (Measured (Size a) a)"
+  measure = const (Size 1)

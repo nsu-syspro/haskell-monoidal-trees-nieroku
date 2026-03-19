@@ -14,6 +14,7 @@ class PriorityQueue q where
 
   -- | Converts given Foldable 'f' to priority queue
   toPriorityQueue :: (Foldable f, Ord k) => f (k, v) -> q k v
+  toPriorityQueue = foldr (uncurry insert) empty
 
   -- | Returns elements 'v' paired with their priority 'k'
   entries :: q k v -> [(k, v)]

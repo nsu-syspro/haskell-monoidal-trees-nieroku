@@ -14,6 +14,7 @@ class (Foldable s) => Sequence s where
   --
   -- > toList . toSequence == id
   toSequence :: (Foldable f) => f a -> s a
+  toSequence = foldr (+|) empty
 
   -- | Prepends given element to sequence
   (+|) :: a -> s a -> s a
