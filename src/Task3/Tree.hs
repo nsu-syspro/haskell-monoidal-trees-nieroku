@@ -1,11 +1,11 @@
 {-# OPTIONS_GHC -Wall #-}
+
 -- The above pragma enables all warnings
 
 module Task3.Tree where
 
 import Common.MonoidalTree
-
-import Task1 (Measured(..))
+import Task1 (Measured (..))
 
 -- * 2-3 tree definition
 
@@ -16,29 +16,115 @@ data Tree m a
   | Leaf a
   | Node2 m (Tree m a) (Tree m a)
   | Node3 m (Tree m a) (Tree m a) (Tree m a)
+  | -- Temporary
+    Node1 (Tree m a)
+  | Node4 (Tree m a) (Tree m a) (Tree m a) (Tree m a)
   deriving (Show, Eq)
 
 -- | Measures given tree using provided measure of 'a'
-instance Measured m a => Measured m (Tree m a) where
-  measure = error "TODO: define measure (Measured m (Task3.Tree m a))"
+instance (Measured m a) => Measured m (Tree m a) where
+  measure Empty = mempty
+  measure (Leaf a) = measure a
+  measure (Node2 m _ _) = m
+  measure (Node3 m _ _ _) = m
+  measure _ = undefined
 
 instance Foldable (Tree m) where
-  foldMap = error "TODO: define foldMap (Foldable (Task3.Tree m))"
+  foldMap f = go
+    where
+      go Empty = mempty
+      go (Leaf a) = f a
+      go (Node2 _ a b) = go a <> go b
+      go (Node3 _ a b c) = go a <> go b <> go c
+      go _ = undefined
 
 -- * Smart constructors
 
 leaf :: a -> Tree m a
-leaf = error "TODO: define leaf (Task3.Tree)"
+leaf = Leaf
 
-node2 :: Measured m a => Tree m a -> Tree m a -> Tree m a
-node2 = error "TODO: define node2 (Task3.Tree)"
+node2 :: (Measured m a) => Tree m a -> Tree m a -> Tree m a
+node2 a b = Node2 (foldMap measure [a, b]) a b
 
-node3 :: Measured m a => Tree m a -> Tree m a -> Tree m a -> Tree m a
-node3 = error "TODO: define node3 (Task3.Tree)"
+node3 :: (Measured m a) => Tree m a -> Tree m a -> Tree m a -> Tree m a
+node3 a b c = Node3 (foldMap measure [a, b, c]) a b c
 
 -- * Monoidal tree instance
 
 instance MonoidalTree Tree where
-  toTree = error "TODO: define toTree (MonoidalTree Task3.Tree)"
-  (<|) = error "TODO: define (<|) (MonoidalTree Task3.Tree)"
-  (|>) = error "TODO: define (|>) (MonoidalTree Task3.Tree)"
+  toTree = foldr (<|) Empty
+  x <| tree = (fix1 . go) tree
+    where
+      go Empty = leaf x
+      go l@(Leaf _) = node2 (leaf x) l
+      go (Node2 _ a b) = fix1 $ node2 (go a) b
+      go (Node3 _ a b c) = fix1 $ node3 (go a) b c
+      go _ = undefined
+  tree |> x = (fix1 . go) tree
+    where
+      go Empty = leaf x
+      go l@(Leaf _) = node2 l (leaf x)
+      go (Node2 _ a b) = fix1 $ node2 a (go b)
+      go (Node3 _ a b c) = fix1 $ node3 a b (go c)
+      go (Node4 _ _ _ _) = error "Node4 should be temporary"
+      go _ = undefined
+
+fix1 :: (Measured m a) => Tree m a -> Tree m a
+---- Insertion
+-- Leaf Node2
+fix1 (Node2 _ (Node2 _ a b) c@(Leaf _)) = node3 a b c
+fix1 (Node2 _ a@(Leaf _) (Node2 _ b c)) = node3 a b c
+-- Leaf Node3
+fix1 (Node3 _ (Node2 _ a b) c@(Leaf _) d@(Leaf _)) = Node4 a b c d
+fix1 (Node3 _ a@(Leaf _) (Node2 _ b c) d@(Leaf _)) = Node4 a b c d
+fix1 (Node3 _ a@(Leaf _) b@(Leaf _) (Node2 _ c d)) = Node4 a b c d
+-- Node2 with Node4 child
+fix1 (Node2 _ (Node2 _ a b) (Node4 c d e f)) = node2 (node3 a b c) (node3 d e f)
+fix1 (Node2 _ (Node3 _ a b c) (Node4 d e f g)) = node3 (node2 a b) (node2 c d) (node3 e f g)
+fix1 (Node2 _ (Node4 a b c d) (Node2 _ e f)) = node2 (node3 a b c) (node3 d e f)
+fix1 (Node2 _ (Node4 a b c d) (Node3 _ e f g)) = node3 (node2 a b) (node2 c d) (node3 e f g)
+-- Node3 with Node4 child
+fix1 (Node3 _ (Node2 _ a b) (Node2 _ c d) (Node4 e f g h)) = node3 (node2 a b) (node3 c d e) (node3 f g h)
+fix1 (Node3 _ (Node2 _ a b) (Node3 _ c d e) (Node4 f g h i)) = node3 (node3 a b c) (node3 d e f) (node3 g h i)
+fix1 (Node3 _ (Node2 _ a b) (Node4 c d e f) (Node2 _ g h)) = node3 (node2 a b) (node3 c d e) (node3 f g h)
+fix1 (Node3 _ (Node2 _ a b) (Node4 c d e f) (Node3 _ g h i)) = node3 (node3 a b c) (node3 d e f) (node3 g h i)
+fix1 (Node3 _ (Node3 _ a b c) (Node2 _ d e) (Node4 f g h i)) = node3 (node3 a b c) (node3 d e f) (node3 g h i)
+fix1 (Node3 _ (Node3 _ a b c) (Node3 _ d e f) (Node4 g h i j)) = Node4 (node2 a b) (node2 c d) (node3 e f g) (node3 h i j)
+fix1 (Node3 _ (Node3 _ a b c) (Node4 d e f g) (Node2 _ h i)) = node3 (node3 a b c) (node3 d e f) (node3 g h i)
+fix1 (Node3 _ (Node3 _ a b c) (Node4 d e f g) (Node3 _ h i j)) = Node4 (node2 a b) (node2 c d) (node3 e f g) (node3 h i j)
+fix1 (Node3 _ (Node4 a b c d) (Node2 _ e f) (Node2 _ g h)) = node3 (node2 a b) (node3 c d e) (node3 f g h)
+fix1 (Node3 _ (Node4 a b c d) (Node2 _ e f) (Node3 _ g h i)) = node3 (node3 a b c) (node3 d e f) (node3 g h i)
+fix1 (Node3 _ (Node4 a b c d) (Node3 _ e f g) (Node2 _ h i)) = node3 (node3 a b c) (node3 d e f) (node3 g h i)
+fix1 (Node3 _ (Node4 a b c d) (Node3 _ e f g) (Node3 _ h i j)) = Node4 (node2 a b) (node2 c d) (node3 e f g) (node3 h i j)
+-- Top-level Node4
+fix1 (Node4 a b c d) = node2 (node2 a b) (node2 c d)
+---- Deletion
+-- Node2 with empty
+fix1 (Node2 _ a Empty) = Node1 a
+fix1 (Node2 _ Empty b) = Node1 b
+-- Node3 with empty
+fix1 (Node3 _ a b Empty) = node2 a b
+fix1 (Node3 _ a Empty c) = node2 a c
+fix1 (Node3 _ Empty b c) = node2 b c
+-- Node2 with Node1 child
+fix1 (Node2 _ (Node1 a) (Node2 _ b c)) = Node1 (node3 a b c)
+fix1 (Node2 _ (Node1 a) (Node3 _ b c d)) = node2 (node2 a b) (node2 c d)
+fix1 (Node2 _ (Node2 _ a b) (Node1 c)) = Node1 (node3 a b c)
+fix1 (Node2 _ (Node3 _ a b c) (Node1 d)) = node2 (node2 a b) (node2 c d)
+-- Node3 with Node1 child
+fix1 (Node3 _ (Node1 a) (Node2 _ b c) (Node2 _ d e)) = node2 (node2 a b) (node3 c d e)
+fix1 (Node3 _ (Node1 a) (Node2 _ b c) (Node3 _ d e f)) = node2 (node3 a b c) (node3 d e f)
+fix1 (Node3 _ (Node1 a) (Node3 _ b c d) (Node2 _ e f)) = node2 (node3 a b c) (node3 d e f)
+fix1 (Node3 _ (Node1 a) (Node3 _ b c d) (Node3 _ e f g)) = node3 (node2 a b) (node2 c d) (node3 e f g)
+fix1 (Node3 _ (Node2 _ a b) (Node1 c) (Node2 _ d e)) = node2 (node2 a b) (node3 c d e)
+fix1 (Node3 _ (Node2 _ a b) (Node1 c) (Node3 _ d e f)) = node2 (node3 a b c) (node3 d e f)
+fix1 (Node3 _ (Node2 _ a b) (Node2 _ c d) (Node1 e)) = node2 (node2 a b) (node3 c d e)
+fix1 (Node3 _ (Node2 _ a b) (Node3 _ c d e) (Node1 f)) = node2 (node3 a b c) (node3 d e f)
+fix1 (Node3 _ (Node3 _ a b c) (Node1 d) (Node2 _ e f)) = node2 (node3 a b c) (node3 d e f)
+fix1 (Node3 _ (Node3 _ a b c) (Node1 d) (Node3 _ e f g)) = node3 (node2 a b) (node2 c d) (node3 e f g)
+fix1 (Node3 _ (Node3 _ a b c) (Node2 _ d e) (Node1 f)) = node2 (node3 a b c) (node3 d e f)
+fix1 (Node3 _ (Node3 _ a b c) (Node3 _ d e f) (Node1 g)) = node3 (node2 a b) (node2 c d) (node3 e f g)
+-- Top-level Node1
+fix1 (Node1 a) = a
+---- No-op
+fix1 tree = tree
