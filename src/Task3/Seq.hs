@@ -58,7 +58,17 @@ instance Sequence Seq where
         | otherwise = fix1 $ node3 a b (go (idx - size a - size b) c)
       go _ _ = undefined
 
-  removeAt = error "TODO: define removeAt (Sequence Task3.Seq)"
+  removeAt idx' (Seq tree') = Seq (fix1 (go idx' tree'))
+    where
+      go 0 (Leaf _) = Empty
+      go idx (Node2 _ a b)
+        | idx < size a = fix1 $ node2 (go idx a) b
+        | otherwise = fix1 $ node2 a (go (idx - size a) b)
+      go idx (Node3 _ a b c)
+        | idx < size a = fix1 $ node3 (go idx a) b c
+        | idx - size a < size b = fix1 $ node3 a (go (idx - size a) b) c
+        | otherwise = fix1 $ node3 a b (go (idx - size a - size b) c)
+      go _ tree = tree
 
   elemAt idx' (Seq tree') = go idx' tree'
     where
