@@ -4,6 +4,7 @@
 
 module Task3.PQueue where
 
+import Common.MonoidalTree (MonoidalTree (..))
 import Common.PriorityQueue
 import Task1 (Measured (..), MinMax (..))
 import Task3.Tree
@@ -19,14 +20,16 @@ newtype Entry k v = Entry {getEntry :: (k, v)}
   deriving (Show, Eq)
 
 instance (Ord k) => Measured (MinMax k) (Entry k v) where
-  measure = error "TODO: define measure (Measured (MinMax k) (Task3.Entry k v))"
+  measure = measure . fst . getEntry
 
 -- * Priority queue instance
 
 instance PriorityQueue PQueue where
-  empty = error "TODO: define empty (PriorityQueue Task3.PQueue)"
-  toPriorityQueue = error "TODO: define toPriorityQueue (PriorityQueue Task3.PQueue)"
-  entries = error "TODO: define entries (PriorityQueue Task3.PQueue)"
-  insert = error "TODO: define insert (PriorityQueue Task3.PQueue)"
+  empty = PQueue Empty
+
+  entries = (foldr ((:) . getEntry) []) . getTree
+
+  insert k v (PQueue tree') = PQueue (Entry (k, v) <| tree')
+
   extractMin = error "TODO: define extractMin (PriorityQueue Task3.PQueue)"
   extractMax = error "TODO: define extractMax (PriorityQueue Task3.PQueue)"
