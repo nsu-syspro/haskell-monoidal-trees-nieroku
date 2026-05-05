@@ -63,18 +63,13 @@ instance MonoidalTree Tree where
 
 -- * Insertion
 
-data Node4 m a = Node4 (Tree m a) (Tree m a) (Tree m a) (Tree m a)
-
-type InsertionResult m a = Either (Node4 m a) (Tree m a)
+type InsertionResult m a = Either ((Tree m a), (Tree m a), (Tree m a), (Tree m a)) (Tree m a)
 
 insertionSubtrees :: InsertionResult m a -> [Tree m a]
 insertionSubtrees (Right (Node2 _ a b)) = [a, b]
 insertionSubtrees (Right (Node3 _ a b c)) = [a, b, c]
-insertionSubtrees (Left (Node4 a b c d)) = [a, b, c, d]
+insertionSubtrees (Left (a, b, c, d)) = [a, b, c, d]
 insertionSubtrees _ = undefined
-
-node4 :: Tree m a -> Tree m a -> Tree m a -> Tree m a -> Either (Node4 m a) b
-node4 a b c d = Left $ Node4 a b c d
 
 insert2 :: (Measured m a) => InsertionResult m a -> InsertionResult m a -> InsertionResult m a
 --
@@ -90,25 +85,25 @@ insert2 x y = case concatMap insertionSubtrees [x, y] of
 
 insert3 :: (Measured m a) => InsertionResult m a -> InsertionResult m a -> InsertionResult m a -> InsertionResult m a
 --
-insert3 (Right (Node2 _ a b)) (Right c@(Leaf _)) (Right d@(Leaf _)) = Left $ Node4 a b c d
-insert3 (Right a@(Leaf _)) (Right (Node2 _ b c)) (Right d@(Leaf _)) = Left $ Node4 a b c d
-insert3 (Right a@(Leaf _)) (Right b@(Leaf _)) (Right (Node2 _ c d)) = Left $ Node4 a b c d
+insert3 (Right (Node2 _ a b)) (Right c@(Leaf _)) (Right d@(Leaf _)) = Left (a, b, c, d)
+insert3 (Right a@(Leaf _)) (Right (Node2 _ b c)) (Right d@(Leaf _)) = Left (a, b, c, d)
+insert3 (Right a@(Leaf _)) (Right b@(Leaf _)) (Right (Node2 _ c d)) = Left (a, b, c, d)
 --
 insert3 (Right a) (Right b) (Right c) = Right $ node3 a b c
 --
-insert3 (Left (Node4 a b c d)) (Right (Node2 _ e f)) (Right z) = Right $ node3 (node3 a b c) (node3 d e f) z
-insert3 (Right (Node2 _ a b)) (Left (Node4 c d e f)) (Right z) = Right $ node3 (node3 a b c) (node3 d e f) z
-insert3 (Right x) (Left (Node4 a b c d)) (Right (Node2 _ e f)) = Right $ node3 x (node3 a b c) (node3 d e f)
-insert3 (Right x) (Right (Node2 _ a b)) (Left (Node4 c d e f)) = Right $ node3 x (node3 a b c) (node3 d e f)
+insert3 (Left (a, b, c, d)) (Right (Node2 _ e f)) (Right z) = Right $ node3 (node3 a b c) (node3 d e f) z
+insert3 (Right (Node2 _ a b)) (Left (c, d, e, f)) (Right z) = Right $ node3 (node3 a b c) (node3 d e f) z
+insert3 (Right x) (Left (a, b, c, d)) (Right (Node2 _ e f)) = Right $ node3 x (node3 a b c) (node3 d e f)
+insert3 (Right x) (Right (Node2 _ a b)) (Left (c, d, e, f)) = Right $ node3 x (node3 a b c) (node3 d e f)
 insert3 x y z = case concatMap insertionSubtrees [x, y, z] of
   [a, b, c, d, e, f, g, h, i] -> Right $ node3 (node3 a b c) (node3 d e f) (node3 g h i)
-  [a, b, c, d, e, f, g, h, i, j] -> Left $ Node4 (node2 a b) (node2 c d) (node3 e f g) (node3 h i j)
+  [a, b, c, d, e, f, g, h, i, j] -> Left (node2 a b, node2 c d, node3 e f g, node3 h i j)
   _ -> undefined
   where
 
 finishInsertion :: (Measured m a) => InsertionResult m a -> Tree m a
 finishInsertion (Right tree) = tree
-finishInsertion (Left (Node4 a b c d)) = node2 (node2 a b) (node2 c d)
+finishInsertion (Left (a, b, c, d)) = node2 (node2 a b) (node2 c d)
 
 -- * Deletion
 
