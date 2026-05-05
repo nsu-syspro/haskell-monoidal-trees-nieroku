@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -Wall #-}
+
 -- The above pragma enables all warnings
 
 module Common.MonoidalTree where
@@ -7,7 +8,6 @@ import Task1
 
 -- | Tree with values 'a' measured using measure 'm'
 class MonoidalTree t where
-
   -- | Converts Foldable 'f' to a tree
   --
   -- For instances implementing Foldable themselves,
@@ -17,7 +17,7 @@ class MonoidalTree t where
   toTree :: (Foldable f, Measured m a) => f a -> t m a
 
   -- | Prepends given value to tree
-  (<|) :: Measured m a => a -> t m a -> t m a
+  (<|) :: (Measured m a) => a -> t m a -> t m a
 
   -- | Appends given value to tree
-  (|>) :: Measured m a => t m a -> a -> t m a
+  (|>) :: (Measured m a) => t m a -> a -> t m a

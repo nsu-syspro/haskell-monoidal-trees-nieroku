@@ -1,11 +1,11 @@
 {-# OPTIONS_GHC -Wall #-}
+
 -- The above pragma enables all warnings
 
 module Common.Sequence where
 
 -- | Random-access sequence
-class Foldable s => Sequence s where
-
+class (Foldable s) => Sequence s where
   -- | Empty sequence
   empty :: s a
 
@@ -13,7 +13,8 @@ class Foldable s => Sequence s where
   -- preserving the order:
   --
   -- > toList . toSequence == id
-  toSequence :: Foldable f => f a -> s a
+  toSequence :: (Foldable f) => f a -> s a
+  toSequence = foldr (+|) empty
 
   -- | Prepends given element to sequence
   (+|) :: a -> s a -> s a
