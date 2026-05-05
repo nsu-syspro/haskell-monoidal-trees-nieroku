@@ -40,20 +40,19 @@ instance PriorityQueue PQueue where
   extractMax = extract @(Max k)
 
 extract :: forall m k v. (Eq m, Measured m (Tree (MinMax k) (Entry k v)), Ord k) => PQueue k v -> Maybe (v, PQueue k v)
-extract (PQueue tree) = (\(v, tree') -> (v, PQueue (fix1 tree'))) <$> go tree
+extract (PQueue tree) = (\(v, tree') -> (v, PQueue (finishDeletion tree'))) <$> go tree
   where
     next :: Tree (MinMax k) (Entry k v) -> Tree (MinMax k) (Entry k v) -> Bool
     next = on (==) (measure @m)
 
     go Empty = Nothing
-    go (Leaf (Entry (_, v))) = Just (v, Empty)
+    go (Leaf (Entry (_, v))) = Just (v, pure Empty)
     go t@(Node2 _ a b)
-      | next t a = (\(v, a') -> (v, fix1 (node2 a' b))) <$> go a
-      | next t b = (\(v, b') -> (v, fix1 (node2 a b'))) <$> go b
+      | next t a = (\(v, a') -> (v, delete2 a' (pure b))) <$> go a
+      | next t b = (\(v, b') -> (v, delete2 (pure a) b')) <$> go b
       | otherwise = undefined
     go t@(Node3 _ a b c)
-      | next t a = (\(v, a') -> (v, fix1 (node3 a' b c))) <$> go a
-      | next t b = (\(v, b') -> (v, fix1 (node3 a b' c))) <$> go b
-      | next t c = (\(v, c') -> (v, fix1 (node3 a b c'))) <$> go c
+      | next t a = (\(v, a') -> (v, delete3 a' (pure b) (pure c))) <$> go a
+      | next t b = (\(v, b') -> (v, delete3 (pure a) b' (pure c))) <$> go b
+      | next t c = (\(v, c') -> (v, delete3 (pure a) (pure b) c')) <$> go c
       | otherwise = undefined
-    go _ = undefined

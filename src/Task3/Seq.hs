@@ -39,36 +39,36 @@ instance Sequence Seq where
   x +| xs = Seq (Elem x <| getTree xs)
   xs |+ x = Seq (getTree xs |> Elem x)
 
-  insertAt idx' x' (Seq tree') = Seq (fix1 (go idx' tree'))
+  insertAt idx' x' (Seq tree') = Seq (finishInsertion (go idx' tree'))
     where
       x = Elem x'
 
       go idx tree
         | idx < 0 = go 0 tree
         | idx > size tree = go (size tree) tree
-      go 0 Empty = leaf x
-      go 0 b@(Leaf _) = node2 (leaf x) b
-      go 1 a@(Leaf _) = node2 a (leaf x)
+      go 0 Empty = pure (leaf x)
+      go 0 b@(Leaf _) = pure (node2 (leaf x) b)
+      go 1 a@(Leaf _) = pure (node2 a (leaf x))
       go idx (Node2 _ a b)
-        | idx <= size a = fix1 $ node2 (go idx a) b
-        | otherwise = fix1 $ node2 a (go (idx - size a) b)
+        | idx <= size a = insert2 (go idx a) (pure b)
+        | otherwise = insert2 (pure a) (go (idx - size a) b)
       go idx (Node3 _ a b c)
-        | idx <= size a = fix1 $ node3 (go idx a) b c
-        | idx - size a <= size b = fix1 $ node3 a (go (idx - size a) b) c
-        | otherwise = fix1 $ node3 a b (go (idx - size a - size b) c)
+        | idx <= size a = insert3 (go idx a) (pure b) (pure c)
+        | idx - size a <= size b = insert3 (pure a) (go (idx - size a) b) (pure c)
+        | otherwise = insert3 (pure a) (pure b) (go (idx - size a - size b) c)
       go _ _ = undefined
 
-  removeAt idx' (Seq tree') = Seq (fix1 (go idx' tree'))
+  removeAt idx' (Seq tree') = Seq (finishDeletion (go idx' tree'))
     where
-      go 0 (Leaf _) = Empty
+      go 0 (Leaf _) = pure Empty
       go idx (Node2 _ a b)
-        | idx < size a = fix1 $ node2 (go idx a) b
-        | otherwise = fix1 $ node2 a (go (idx - size a) b)
+        | idx < size a = delete2 (go idx a) (pure b)
+        | otherwise = delete2 (pure a) (go (idx - size a) b)
       go idx (Node3 _ a b c)
-        | idx < size a = fix1 $ node3 (go idx a) b c
-        | idx - size a < size b = fix1 $ node3 a (go (idx - size a) b) c
-        | otherwise = fix1 $ node3 a b (go (idx - size a - size b) c)
-      go _ tree = tree
+        | idx < size a = delete3 (go idx a) (pure b) (pure c)
+        | idx - size a < size b = delete3 (pure a) (go (idx - size a) b) (pure c)
+        | otherwise = delete3 (pure a) (pure b) (go (idx - size a - size b) c)
+      go _ tree = pure tree
 
   elemAt idx' (Seq tree') = go idx' tree'
     where
